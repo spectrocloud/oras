@@ -20,7 +20,7 @@ GIT_DIRTY   = $(shell test -n "`git status --porcelain`" && echo "dirty" || echo
 
 TARGET_OBJS ?= checksums.txt darwin_amd64.tar.gz darwin_arm64.tar.gz linux_amd64.tar.gz linux_arm64.tar.gz linux_armv7.tar.gz windows_amd64.zip
 
-LDFLAGS = -w
+LDFLAGS = -linkmode=external -extldflags "-static"
 ifdef VERSION
 	LDFLAGS += -X $(PROJECT_PKG)/internal/version.BuildMetadata=$(VERSION)
 endif
@@ -50,7 +50,7 @@ build-linux: build-linux-amd64 build-linux-arm64 build-linux-arm-v7
 
 .PHONY: build-linux-amd64
 build-linux-amd64:
-	GOARCH=amd64 CGO_ENABLED=0 GOOS=linux go build -v --ldflags="$(LDFLAGS)" \
+	GOARCH=amd64 GOEXPERIMENT=boringcrypto CGO_ENABLED=1 GOOS=linux go build -v --ldflags="$(LDFLAGS)" \
 		-o bin/linux/amd64/$(CLI_EXE) $(CLI_PKG)
 
 .PHONY: build-linux-arm64

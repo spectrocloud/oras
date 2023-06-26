@@ -20,7 +20,7 @@ GIT_DIRTY   = $(shell test -n "`git status --porcelain`" && echo "dirty" || echo
 
 TARGET_OBJS ?= checksums.txt darwin_amd64.tar.gz darwin_arm64.tar.gz linux_amd64.tar.gz linux_arm64.tar.gz linux_armv7.tar.gz windows_amd64.zip
 
-LDFLAGS = -extldflags "-static"
+LDFLAGS = -w
 ifdef VERSION
 	LDFLAGS += -X $(PROJECT_PKG)/internal/version.BuildMetadata=$(VERSION)
 endif
@@ -45,12 +45,10 @@ clean:
 .PHONY: build
 ifeq ($(FIPS_ENABLE),yes)
 build: LDFLAGS += -linkmode=external -extldflags "-static"
-build: 
-	build-linux-fips
+build: build-linux-fips
 else
-build: LDFLAGS += -extldflags "-static"
-build: 
-	build-linux build-mac build-windows
+build: LDFLAGS += -w
+build: build-linux build-mac build-windows
 endif
 
 .PHONY: build-linux-fips

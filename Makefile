@@ -49,9 +49,13 @@ build: build-linux build-mac build-windows
 build-linux: build-linux-amd64 build-linux-arm64 build-linux-arm-v7
 
 .PHONY: build-linux-amd64
-build-linux-amd64:
-	GOARCH=amd64 GOEXPERIMENT=boringcrypto CGO_ENABLED=1 GOOS=linux go build -v --ldflags="$(LDFLAGS)" \
-		-o bin/linux/amd64/$(CLI_EXE) $(CLI_PKG)
+ifeq ($(FIPS_ENABLE),yes)	
+build-linux-amd64: 
+	GOARCH=amd64 GOEXPERIMENT=boringcrypto CGO_ENABLED=1 GOOS=linux go build -v --ldflags="$(LDFLAGS)" -o bin/linux/amd64/$(CLI_EXE) $(CLI_PKG)
+else
+build-linux-amd64:      
+	GOARCH=amd64 CGO_ENABLED=0 GOOS=linux go build -v --ldflags="$(LDFLAGS)" -o bin/linux/amd64/$(CLI_EXE) $(CLI_PKG)
+endif       
 
 .PHONY: build-linux-arm64
 build-linux-arm64:

@@ -20,7 +20,7 @@ GIT_DIRTY   = $(shell test -n "`git status --porcelain`" && echo "dirty" || echo
 
 TARGET_OBJS ?= checksums.txt darwin_amd64.tar.gz darwin_arm64.tar.gz linux_amd64.tar.gz linux_arm64.tar.gz linux_armv7.tar.gz windows_amd64.zip
 
-LDFLAGS = -linkmode=external -extldflags "-static"
+LDFLAGS = -extldflags "-static"
 ifdef VERSION
 	LDFLAGS += -X $(PROJECT_PKG)/internal/version.BuildMetadata=$(VERSION)
 endif
@@ -43,19 +43,28 @@ clean:
 	git status --ignored --short | grep '^!! ' | sed 's/!! //' | xargs rm -rf
 
 .PHONY: build
-build: build-linux build-mac build-windows
+ifeq ($(FIPS_ENABLE),yes)
+build: LDFLAGS += -linkmode=external -extldflags "-static"
+build: 
+	build-linux-fips
+else
+build: LDFLAGS += -extldflags "-static"
+build: 
+	build-linux build-mac build-windows
+endif
+
+.PHONY: build-linux-fips
+build-linux-fips:
+	GOARCH=amd64 GOEXPERIMENT=boringcrypto CGO_ENABLED=1 GOOS=linux go build -v --ldflags="$(LDFLAGS)" \
+		-o bin/linux/amd64/$(CLI_EXE) $(CLI_PKG)
 
 .PHONY: build-linux
 build-linux: build-linux-amd64 build-linux-arm64 build-linux-arm-v7
 
 .PHONY: build-linux-amd64
-ifeq ($(FIPS_ENABLE),yes)	
-build-linux-amd64: 
-	GOARCH=amd64 GOEXPERIMENT=boringcrypto CGO_ENABLED=1 GOOS=linux go build -v --ldflags="$(LDFLAGS)" -o bin/linux/amd64/$(CLI_EXE) $(CLI_PKG)
-else
 build-linux-amd64:      
-	GOARCH=amd64 CGO_ENABLED=0 GOOS=linux go build -v --ldflags="$(LDFLAGS)" -o bin/linux/amd64/$(CLI_EXE) $(CLI_PKG)
-endif       
+	GOARCH=amd64 CGO_ENABLED=0 GOOS=linux go build -v --ldflags="$(LDFLAGS)" \
+		-o bin/linux/amd64/$(CLI_EXE) $(CLI_PKG)    
 
 .PHONY: build-linux-arm64
 build-linux-arm64:
